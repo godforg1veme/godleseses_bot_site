@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram-бот для автоматической записи клиентов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #1a1a1a;
+      --text-primary: #f0f0f0;
+      --text-secondary: #a0a0a0;
+      --accent: #d4a0a0;
+      --accent-hover: #e0b5b5;
+      --accent-glow: rgba(212, 160, 160, 0.15);
+      --border: rgba(255, 255, 255, 0.06);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(ellipse 400px 600px at 0% 20%, rgba(212, 160, 160, 0.04) 0%, transparent 100%),
+        radial-gradient(ellipse 350px 500px at 100% 45%, rgba(212, 160, 160, 0.035) 0%, transparent 100%),
+        radial-gradient(ellipse 300px 400px at 5% 70%, rgba(180, 140, 160, 0.03) 0%, transparent 100%),
+        radial-gradient(ellipse 350px 450px at 95% 85%, rgba(212, 160, 160, 0.03) 0%, transparent 100%);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body > *:not(script) {
+      position: relative;
+      z-index: 1;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 0;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+
+    nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-logo span {
+      color: var(--accent);
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--accent);
+      color: #0a0a0a;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .nav-cta:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: 720px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .hero-badge svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--accent);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 .accent {
+      color: var(--accent);
+    }
+
+    .hero p {
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: var(--accent);
+      color: #0a0a0a;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      background: transparent;
+      color: var(--text-primary);
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    /* ─── SECTIONS ─── */
+    section {
+      padding: 100px 0;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      line-height: 1.7;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-header .section-subtitle {
+      margin: 0 auto;
+    }
+
+    /* ─── SCREENSHOTS ─── */
+    .screenshots-section {
+      padding: 60px 0 100px;
+    }
+
+    .screenshots-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .screenshot-item {
+      text-align: center;
+    }
+
+    .screenshot-frame {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    .screenshot-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .screenshot-frame .screenshot-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .screenshot-frame .screenshot-placeholder svg {
+      width: 32px;
+      height: 32px;
+      opacity: 0.25;
+      stroke: currentColor;
+      fill: none;
+    }
+
+    .screenshot-step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0a0a0a;
+      font-size: 0.8rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .screenshot-caption {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    /* ─── FEATURES ─── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(212, 160, 160, 0.2);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--accent);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 44px;
+      left: calc(16.66% + 24px);
+      right: calc(16.66% + 24px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), rgba(212, 160, 160, 0.2));
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .step p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* ─── WHO IS IT FOR ─── */
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+      gap: 16px;
+    }
+
+    .audience-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .audience-item:hover {
+      border-color: rgba(212, 160, 160, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .audience-item .audience-emoji {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+
+    .audience-item span:last-child {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    /* ─── CTA ─── */
+    .cta-section {
+      padding: 80px 0 100px;
+    }
+
+    .cta-block {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 64px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-block::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-block>* {
+      position: relative;
+    }
+
+    .cta-block .section-title {
+      margin-bottom: 16px;
+    }
+
+    .cta-block .section-subtitle {
+      margin: 0 auto 40px;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+
+    footer .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-text {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+    }
+
+    /* ─── FLOATING DECORATIONS ─── */
+    .decor-wrap {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .decor {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: floatDecor 20s ease-in-out infinite;
+    }
+
+    .decor--ring {
+      border: 1.5px solid rgba(212, 160, 160, 0.22);
+      background: transparent;
+    }
+
+    .decor--dot {
+      background: rgba(212, 160, 160, 0.2);
+    }
+
+    .decor--cross {
+      border-radius: 0;
+      background: transparent;
+      width: 16px !important;
+      height: 16px !important;
+    }
+
+    .decor--cross::before,
+    .decor--cross::after {
+      content: '';
+      position: absolute;
+      background: rgba(212, 160, 160, 0.2);
+      border-radius: 1px;
+    }
+
+    .decor--cross::before {
+      width: 100%;
+      height: 1.5px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .decor--cross::after {
+      height: 100%;
+      width: 1.5px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .decor--diamond {
+      border-radius: 2px;
+      border: 1.5px solid rgba(212, 160, 160, 0.19);
+      background: transparent;
+      transform: rotate(45deg);
+    }
+
+    @keyframes floatDecor {
+      0%, 100% {
+        opacity: 0;
+        transform: translateY(0px);
+      }
+      20% {
+        opacity: 1;
+      }
+      80% {
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-30px);
+      }
+    }
+
+    .d1  { width: 12px; height: 12px; top: 8%;   left: 3%;   animation-delay: 0s;    animation-duration: 18s; }
+    .d2  { width: 20px; height: 20px; top: 15%;  right: 5%;  animation-delay: -3s;   animation-duration: 22s; }
+    .d3  { width: 8px;  height: 8px;  top: 25%;  left: 6%;   animation-delay: -6s;   animation-duration: 16s; }
+    .d4  { width: 14px; height: 14px; top: 32%;  right: 3%;  animation-delay: -2s;   animation-duration: 20s; }
+    .d5  { width: 16px; height: 16px; top: 40%;  left: 2%;   animation-delay: -8s;   animation-duration: 24s; }
+    .d6  { width: 10px; height: 10px; top: 48%;  right: 6%;  animation-delay: -4s;   animation-duration: 17s; }
+    .d7  { width: 18px; height: 18px; top: 55%;  left: 5%;   animation-delay: -10s;  animation-duration: 21s; }
+    .d8  { width: 6px;  height: 6px;  top: 62%;  right: 4%;  animation-delay: -1s;   animation-duration: 19s; }
+    .d9  { width: 14px; height: 14px; top: 70%;  left: 4%;   animation-delay: -7s;   animation-duration: 23s; }
+    .d10 { width: 22px; height: 22px; top: 78%;  right: 3%;  animation-delay: -5s;   animation-duration: 18s; }
+    .d11 { width: 10px; height: 10px; top: 85%;  left: 7%;   animation-delay: -9s;   animation-duration: 20s; }
+    .d12 { width: 16px; height: 16px; top: 92%;  right: 5%;  animation-delay: -12s;  animation-duration: 22s; }
+    .d13 { width: 8px;  height: 8px;  top: 12%;  left: 8%;   animation-delay: -14s;  animation-duration: 25s; }
+    .d14 { width: 12px; height: 12px; top: 58%;  right: 7%;  animation-delay: -11s;  animation-duration: 19s; }
+
+    @media (max-width: 768px) {
+      .decor-wrap { display: none; }
+    }
+
+    /* ─── ANIMATIONS ─── */
+    .reveal {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    html.js-ready .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    html.js-ready .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    html.js-ready .reveal-delay-1 { transition-delay: 0.1s; }
+    html.js-ready .reveal-delay-2 { transition-delay: 0.2s; }
+    html.js-ready .reveal-delay-3 { transition-delay: 0.3s; }
+    html.js-ready .reveal-delay-4 { transition-delay: 0.4s; }
+    html.js-ready .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      section {
+        padding: 64px 0;
+        overflow: hidden;
+      }
+
+      .container {
+        padding: 0 16px;
+      }
+
+      .hero::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      .cta-block::before {
+        width: 280px;
+        height: 280px;
+      }
+
+      .hero {
+        min-height: calc(100vh - 60px);
+        min-height: calc(100dvh - 60px);
+        padding: 100px 16px 60px;
+      }
+
+      .hero h1 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+      }
+
+      .hero p {
+        font-size: 1rem;
+        margin-bottom: 32px;
+      }
+
+      .hero-badge {
+        font-size: 0.78rem;
+        margin-bottom: 24px;
+      }
+
+      .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 24px;
+        font-size: 0.95rem;
+      }
+
+      .screenshots-section {
+        padding: 40px 0 64px;
+      }
+
+      .screenshots-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .screenshot-frame {
+        border-radius: 12px;
+      }
+
+      .screenshot-caption {
+        font-size: 0.8rem;
+      }
+
+      .screenshot-step {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+      }
+
+      .section-header {
+        margin-bottom: 40px;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+      }
+
+      .section-subtitle {
+        font-size: 0.95rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .feature-card {
+        padding: 24px;
+      }
+
+      .audience-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .audience-item {
+        padding: 16px 20px;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 36px;
+      }
+
+      .steps::before {
+        display: none;
+      }
+
+      .step-number {
+        width: 48px;
+        height: 48px;
+        font-size: 1.1rem;
+      }
+
+      .step p {
+        max-width: 100%;
+      }
+
+      .cta-block {
+        padding: 40px 20px;
+        border-radius: 16px;
+      }
+
+      .cta-block .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      footer .container {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .nav-cta span {
+        display: none;
+      }
+
+      .nav-cta {
+        padding: 8px 12px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .hero h1 {
+        font-size: 1.7rem;
+      }
+
+      .section-title {
+        font-size: 1.35rem;
+      }
+
+      .feature-card {
+        padding: 20px;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- FLOATING DECORATIONS (desktop only) -->
+  <div class="decor-wrap" aria-hidden="true">
+    <div class="decor decor--ring d1"></div>
+    <div class="decor decor--dot d2"></div>
+    <div class="decor decor--cross d3"></div>
+    <div class="decor decor--ring d4"></div>
+    <div class="decor decor--diamond d5"></div>
+    <div class="decor decor--dot d6"></div>
+    <div class="decor decor--ring d7"></div>
+    <div class="decor decor--cross d8"></div>
+    <div class="decor decor--dot d9"></div>
+    <div class="decor decor--ring d10"></div>
+    <div class="decor decor--diamond d11"></div>
+    <div class="decor decor--dot d12"></div>
+    <div class="decor decor--cross d13"></div>
+    <div class="decor decor--ring d14"></div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="container">
+      <a href="#" class="nav-logo">Client<span>Bot</span></a>
+      <a href="#cta" class="nav-cta">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        <span>Заказать бота</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge reveal">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+        </svg>
+        Telegram-бот &middot; Готовое решение
+      </div>
+      <h1 class="reveal reveal-delay-1">Бот для <span class="accent">автоматической записи клиентов</span></h1>
+      <p class="reveal reveal-delay-2">Автоматизируй запись клиентов — бот работает 24/7, принимает заявки, отправляет
+        напоминания и управляет расписанием</p>
+      <div class="hero-buttons reveal reveal-delay-3">
+        <a href="https://t.me/godleseses_bot" class="btn-primary" target="_blank">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+          </svg>
+          Попробовать демо
+        </a>
+        <a href="#features" class="btn-secondary">
+          Узнать больше
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section class="screenshots-section">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Демонстрация</span>
+        <h2 class="section-title">Как выглядит бот</h2>
+        <p class="section-subtitle">Полный цикл записи клиента — от главного меню до подтверждения</p>
+      </div>
+      <div class="screenshots-grid">
+
+        <div class="screenshot-item reveal">
+          <div class="screenshot-frame">
+            <img src="assets/screen-1.png" alt="Главное меню бота">
+            <div class="screenshot-placeholder">
+              <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span>screen-1.png</span>
+            </div>
+          </div>
+          <div class="screenshot-step">1</div>
+          <div class="screenshot-caption">Главное меню</div>
+        </div>
+
+        <div class="screenshot-item reveal reveal-delay-1">
+          <div class="screenshot-frame">
+            <img src="assets/screen-2.png" alt="Выбор даты">
+            <div class="screenshot-placeholder">
+              <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span>screen-2.png</span>
+            </div>
+          </div>
+          <div class="screenshot-step">2</div>
+          <div class="screenshot-caption">Выбор даты</div>
+        </div>
+
+        <div class="screenshot-item reveal reveal-delay-2">
+          <div class="screenshot-frame">
+            <img src="assets/screen-3.png" alt="Выбор времени">
+            <div class="screenshot-placeholder">
+              <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span>screen-3.png</span>
+            </div>
+          </div>
+          <div class="screenshot-step">3</div>
+          <div class="screenshot-caption">Выбор времени</div>
+        </div>
+
+        <div class="screenshot-item reveal reveal-delay-3">
+          <div class="screenshot-frame">
+            <img src="assets/screen-4.png" alt="Подтверждение записи">
+            <div class="screenshot-placeholder">
+              <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span>screen-4.png</span>
+            </div>
+          </div>
+          <div class="screenshot-step">4</div>
+          <div class="screenshot-caption">Подтверждение записи</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" style="position: relative;">
+    <div style="position:absolute;top:10%;left:-5%;width:300px;height:300px;background:radial-gradient(circle,rgba(212,160,160,0.06),transparent 70%);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:10%;right:-5%;width:250px;height:250px;background:radial-gradient(circle,rgba(180,140,160,0.05),transparent 70%);pointer-events:none;"></div>
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Возможности</span>
+        <h2 class="section-title">Всё, что нужно для записи клиентов</h2>
+        <p class="section-subtitle">Бот берёт на себя рутину — вы сосредоточитесь на работе</p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </div>
+          <h3>Онлайн-запись</h3>
+          <p>Удобный календарь с выбором даты и времени. Клиент записывается за пару кликов, без звонков и переписок</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          <h3>Напоминания</h3>
+          <p>Автоматические уведомления за 24 часа и за 1 час до визита. Клиенты не забывают о записи</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <line x1="12" y1="1" x2="12" y2="23" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </div>
+          <h3>Прайс-лист</h3>
+          <p>Цены и фотографии услуг доступны прямо в боте. Клиент видит всё до записи</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </div>
+          <h3>Админ-панель</h3>
+          <p>Полное управление расписанием, записями и контентом. Добавляйте дни, слоты, управляйте записями</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-4">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </div>
+          <h3>Портфолио</h3>
+          <p>Покажите примеры работ прямо в боте. Фотографии загружаются через админ-панель</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-5">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <h3>Контроль клиентов</h3>
+          <p>Чёрный список, проверка подписки на канал. Только нужные клиенты попадают к вам</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- WHO IS IT FOR -->
+  <section style="background: var(--bg-secondary);">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Аудитория</span>
+        <h2 class="section-title">Кому подходит бот</h2>
+        <p class="section-subtitle">Универсальное решение для всех, кто работает по записи</p>
+      </div>
+      <div class="audience-grid">
+        <div class="audience-item reveal">
+          <span class="audience-emoji">💅</span>
+          <span>Мастерам маникюра</span>
+        </div>
+        <div class="audience-item reveal reveal-delay-1">
+          <span class="audience-emoji">💈</span>
+          <span>Барберам</span>
+        </div>
+        <div class="audience-item reveal reveal-delay-2">
+          <span class="audience-emoji">📚</span>
+          <span>Репетиторам</span>
+        </div>
+        <div class="audience-item reveal reveal-delay-3">
+          <span class="audience-emoji">🧠</span>
+          <span>Психологам</span>
+        </div>
+        <div class="audience-item reveal reveal-delay-4">
+          <span class="audience-emoji">🏋️</span>
+          <span>Тренерам</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW THE BOT WORKS -->
+  <section>
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Просто и быстро</span>
+        <h2 class="section-title">Как работает бот</h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-number">1</div>
+          <h3>Клиент открывает бота</h3>
+          <p>Смотрит услуги и свободные окошки</p>
+        </div>
+        <div class="step reveal reveal-delay-2">
+          <div class="step-number">2</div>
+          <h3>Выбирает удобное время</h3>
+          <p>Запись занимает меньше минуты</p>
+        </div>
+        <div class="step reveal reveal-delay-4">
+          <div class="step-number">3</div>
+          <h3>Запись появляется у вас</h3>
+          <p>Вы сразу видите нового клиента</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW TO GET -->
+  <section style="background: var(--bg-secondary);">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Как получить</span>
+        <h2 class="section-title">Три шага до вашего бота</h2>
+        <p class="section-subtitle">Быстро, без сложных настроек — вы получите готового бота под ваш бренд</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-number">1</div>
+          <h3>Напишите мне</h3>
+          <p>Свяжитесь через Telegram и расскажите о вашем бизнесе и пожеланиях</p>
+        </div>
+        <div class="step reveal reveal-delay-2">
+          <div class="step-number">2</div>
+          <h3>Обсуждаем детали</h3>
+          <p>Настроим бота под ваши услуги, расписание, цены и фирменный стиль</p>
+        </div>
+        <div class="step reveal reveal-delay-4">
+          <div class="step-number">3</div>
+          <h3>Запускаем</h3>
+          <p>Получаете готового бота, который сразу начинает принимать записи клиентов</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section" id="cta">
+    <div class="container">
+      <div class="cta-block reveal">
+        <span class="section-label">Готовы начать?</span>
+        <h2 class="section-title">Получите своего бота для записи</h2>
+        <p class="section-subtitle">Автоматизируйте запись клиентов и освободите время для того, что действительно важно
+        </p>
+        <div class="hero-buttons">
+          <a href="https://t.me/kiIIforus" class="btn-primary" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+            </svg>
+            Написать в Telegram
+          </a>
+          <a href="https://t.me/godleseses_bot" class="btn-secondary" target="_blank">
+            Попробовать демо-бота
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <span class="footer-text">&copy; 2026 ClientBot</span>
+      <div class="footer-links">
+        <a href="https://t.me/godleseses_bot" target="_blank">Демо-бот</a>
+        <a href="https://t.me/kiIIforus" target="_blank">Связаться</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      if (!('IntersectionObserver' in window)) return;
+
+      var testEl = document.createElement('div');
+      document.body.appendChild(testEl);
+      var works = false;
+
+      var testObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) works = true;
+        });
+      });
+      testObs.observe(testEl);
+
+      setTimeout(function () {
+        testObs.disconnect();
+        document.body.removeChild(testEl);
+
+        if (!works) return;
+
+        document.documentElement.classList.add('js-ready');
+
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.05 });
+
+        document.querySelectorAll('.reveal').forEach(function (el) {
+          observer.observe(el);
+        });
+      }, 100);
+    })();
+
+    document.querySelectorAll('.screenshot-frame img').forEach(function (img) {
+      var placeholder = img.nextElementSibling;
+      if (!placeholder) return;
+      img.addEventListener('load', function () {
+        placeholder.style.display = 'none';
+      });
+      img.addEventListener('error', function () {
+        img.style.display = 'none';
+      });
+      if (img.complete && img.naturalWidth > 0) {
+        placeholder.style.display = 'none';
+      }
+    });
+  </script>
+
+</body>
+
+</html>
